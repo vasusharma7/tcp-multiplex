@@ -20,10 +20,11 @@ void paddr(unsigned char* a) {
 }
 
 int main() {
-    int i = 0;
+    int i = 0, j = 1, k = 0;
+    char ip[16];
     while (i < 65536) {
-        int fd, portno;
-        if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        int sockfd, portno;
+        if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
             perror("cannot create socket");
             return -1;
         }
@@ -32,9 +33,11 @@ int main() {
         //     perror("cannot set socket options");
         //     return -5;
         // }
-        if (setsockopt(fd, SOL_IP, IP_FREEBIND, &v, sizeof(v)) != 0) {
+        if (setsockopt(sockfd, SOL_IP, IP_FREEBIND, &v, sizeof(v)) != 0) {
             perror("cannot set socket options");
             return -4;
+        } else{
+            k = 1;
         }
         struct sockaddr_in myaddr;
         socklen_t addrlen = sizeof(myaddr);
@@ -46,22 +49,24 @@ int main() {
         memset((char*)&myaddr, 0, sizeof(myaddr));
         myaddr.sin_family = AF_INET;
         // myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-        inet_pton(AF_INET, "192.168.51.24", &myaddr.sin_addr);
+        sprintf(ip, "192.168.51.%d",j);
+        inet_pton(AF_INET, ip, &myaddr.sin_addr);
 
         myaddr.sin_port = htons(0);
 
-        if (bind(fd, (struct sockaddr*)&myaddr, sizeof(myaddr)) < 0) {
+        if (bind(sockfd, (struct sockaddr*)&myaddr, sizeof(myaddr)) < 0) {
             perror("bind failed");
-            return -2;
+            j += 1;
+            if (!k) return -2;
         }
 
-        if (getsockname(fd, (struct sockaddr*)&myaddr, &addrlen) < 0) {
+        if (getsockname(sockfd, (struct sockaddr*)&myaddr, &addrlen) < 0) {
             perror("ERROR on getsockname");
             return -3;
         }
 
         portno = ntohs(myaddr.sin_port);
-        printf("i = %d | Bound port: %d\n", i, portno);
+        printf("i = %d | IP: %s, port: %d\n", i, ip, portno);
 
         i += 1;
     }
