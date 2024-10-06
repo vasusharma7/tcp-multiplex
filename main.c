@@ -26,24 +26,24 @@ void paddr(unsigned char* a) {
 }
 
 int main() {
-    int i = 0, j = 63, k = 0;
+    int suffix = 63, free_bound = 0,opt = 1;
     char ip[16];
-    while (i < 1) {
+    sprintf(ip, "192.168.51.%d",suffix);
+    for (int i = 0; i < 65535; i++) {
         int sockfd, portno;
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
             perror("cannot create socket");
             return -1;
         }
-        int v = 1;
         // if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &v, sizeof(v)) != 0) {
         //     perror("cannot set socket options");
         //     return -5;
         // }
-        if (setsockopt(sockfd, SOL_IP, IP_FREEBIND, &v, sizeof(v)) != 0) {
+        if (setsockopt(sockfd, SOL_IP, IP_FREEBIND, &opt, sizeof(opt)) != 0) {
             perror("cannot set socket options");
             return -4;
         } else{
-            k = 1;
+            free_bound = 1;
         }
         struct sockaddr_in myaddr;
         socklen_t addrlen = sizeof(myaddr);
@@ -55,15 +55,15 @@ int main() {
         memset((char*)&myaddr, 0, sizeof(myaddr));
         myaddr.sin_family = AF_INET;
         // myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-        sprintf(ip, "192.168.51.%d",j);
+        sprintf(ip, "192.168.51.%d",suffix);
         inet_pton(AF_INET, ip, &myaddr.sin_addr);
 
         myaddr.sin_port = htons(0);
 
         if (bind(sockfd, (struct sockaddr*)&myaddr, sizeof(myaddr)) < 0) {
             perror("bind failed");
-            j += 1;
-            if (!k) return -2;
+            sprintf(ip, "192.168.51.%d",++suffix);
+            if (!free_bound) return -2;
         }
 
         if (getsockname(sockfd, (struct sockaddr*)&myaddr, &addrlen) < 0) {
@@ -72,11 +72,9 @@ int main() {
         }
 
         portno = ntohs(myaddr.sin_port);
-        printf("i = %d | IP: %s, port: %d\n", i, ip, portno);
+        printf("conn = %d | IP: %s | port: %d\n", i, ip, portno);
 
-        i += 1;
-
-        connection_test(sockfd);
+        // connection_test(sockfd);
     }
 
     return 0;
@@ -101,8 +99,6 @@ int connection_test(int fd) {
     memset((char*)&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(8080);
-
-
 
     inet_pton(AF_INET, "192.168.51.63", &servaddr.sin_addr);
 
